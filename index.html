@@ -1,0 +1,848 @@
+<title>Instrument Mixer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#FFF6E8;
+  --surface:#FFFFFF;
+  --surface-2:#FFFBF2;
+  --ink:#2B2135;
+  --ink-soft:#736180;
+  --shadow:#2B2135;
+  --rule:#E8D8C0;
+  --accent:#FF3D6E;
+  --accent-ink:#FFFFFF;
+  --glyph-ink:#2A2135;
+  --focus:#2F7BE0;
+  --r:18px;
+  --sp:clamp(14px,2.2vw,22px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#241B33;
+    --surface:#31264A;
+    --surface-2:#3A2D56;
+    --ink:#FBEEDD;
+    --ink-soft:#B7A4C9;
+    --shadow:#140E22;
+    --rule:#4A3A66;
+    --accent:#FF5C82;
+    --accent-ink:#241B33;
+    --focus:#8FBBFF;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#241B33;
+  --surface:#31264A;
+  --surface-2:#3A2D56;
+  --ink:#FBEEDD;
+  --ink-soft:#B7A4C9;
+  --shadow:#140E22;
+  --rule:#4A3A66;
+  --accent:#FF5C82;
+  --accent-ink:#241B33;
+  --focus:#8FBBFF;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  font-weight:500;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-text-size-adjust:100%;
+  overscroll-behavior-y:contain;
+}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+.wrap{max-width:1180px;margin:0 auto;padding:var(--sp) var(--sp) 48px;display:flex;flex-direction:column;gap:var(--sp)}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{
+  font-family:"Bungee","Fredoka",sans-serif;font-weight:400;
+  font-size:clamp(22px,4.2vw,34px);letter-spacing:.01em;margin:0;line-height:1;
+  text-wrap:balance;
+}
+.brand .sub{font-size:clamp(13px,1.7vw,15px);color:var(--ink-soft);margin-top:6px}
+.tally{
+  display:flex;align-items:baseline;gap:7px;
+  background:var(--surface);border:3px solid var(--ink);border-radius:999px;
+  padding:8px 16px;box-shadow:4px 4px 0 var(--shadow);
+}
+.tally b{font-size:19px;font-variant-numeric:tabular-nums}
+.tally span{font-size:13px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- two column on wide ---------- */
+.stage{display:flex;flex-direction:column;gap:var(--sp)}
+@media (min-width:880px){
+  .stage{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,.85fr);gap:26px;align-items:start}
+  .bench-col{position:sticky;top:var(--sp)}
+}
+
+/* ---------- instrument groups ---------- */
+.groups{display:flex;flex-direction:column;gap:18px}
+.grp-label{
+  display:flex;align-items:center;gap:10px;margin-bottom:9px;
+  font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
+}
+.grp-label::after{content:"";flex:1;height:2px;background:var(--rule);border-radius:2px}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.pick{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.chip{
+  width:100%;aspect-ratio:1/1;border-radius:16px;
+  border:3px solid var(--ink);box-shadow:4px 4px 0 var(--shadow);
+  display:grid;place-items:center;overflow:hidden;
+  transition:transform .1s ease,box-shadow .1s ease;
+}
+.chip svg{width:84%;height:84%;display:block}
+.pick .nm{font-size:clamp(11px,1.5vw,13.5px);line-height:1.15;text-align:center;color:var(--ink)}
+.pick:active .chip{transform:translate(4px,4px);box-shadow:0 0 0 var(--shadow)}
+.pick[aria-pressed="true"] .chip{
+  transform:translate(4px,4px);
+  box-shadow:0 0 0 var(--shadow),0 0 0 4px var(--paper),0 0 0 8px var(--accent);
+}
+.pick[aria-pressed="true"] .nm{color:var(--accent);font-weight:600}
+
+/* ---------- bench ---------- */
+.bench{
+  background:var(--surface);border:3px solid var(--ink);border-radius:24px;
+  box-shadow:7px 7px 0 var(--shadow);padding:clamp(16px,2.6vw,24px);
+  display:flex;flex-direction:column;align-items:center;gap:14px;min-height:330px;justify-content:center;
+}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.newname{
+  font-family:"Bungee","Fredoka",sans-serif;font-weight:400;line-height:.98;
+  font-size:clamp(30px,6.4vw,52px);text-align:center;margin:0;word-break:break-word;text-wrap:balance;
+}
+.eq{display:flex;align-items:center;justify-content:center;gap:clamp(6px,1.4vw,12px);width:100%}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.slot .box{
+  width:clamp(56px,11vw,76px);aspect-ratio:1/1;border-radius:15px;
+  border:3px solid var(--ink);box-shadow:3px 3px 0 var(--shadow);display:grid;place-items:center;overflow:hidden;
+}
+.slot.big .box{width:clamp(86px,17vw,122px);border-radius:20px;box-shadow:5px 5px 0 var(--shadow)}
+.slot .cap{font-size:12px;color:var(--ink-soft);max-width:11ch;text-align:center;line-height:1.2}
+.op{font-family:"Bungee",sans-serif;font-size:clamp(17px,3vw,24px);color:var(--ink-soft);padding-bottom:18px}
+.empty{border-style:dashed!important;box-shadow:none!important;background:var(--surface-2);color:var(--ink-soft);font-size:22px}
+.hint{color:var(--ink-soft);font-size:15px;text-align:center;max-width:30ch;line-height:1.45}
+.playing .slot.big .box{animation:wob .55s ease-in-out 2}
+@keyframes wob{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-4deg) scale(1.06)}75%{transform:rotate(4deg) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.playing .slot.big .box{animation:none}}
+
+.acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{
+  border:3px solid var(--ink);border-radius:999px;padding:11px 22px;font-weight:600;font-size:16px;
+  box-shadow:4px 4px 0 var(--shadow);background:var(--surface-2);
+  transition:transform .1s ease,box-shadow .1s ease;
+}
+.btn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--shadow)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+
+/* ---------- album ---------- */
+.album{
+  background:var(--surface);border:3px solid var(--ink);border-radius:24px;
+  box-shadow:7px 7px 0 var(--shadow);padding:clamp(16px,2.4vw,22px);
+}
+.album h2{font-family:"Bungee",sans-serif;font-weight:400;font-size:clamp(17px,2.6vw,22px);margin:0}
+.album-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.album-head .count{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.found{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
+.card{
+  display:flex;align-items:center;gap:10px;text-align:left;width:100%;
+  border:2.5px solid var(--ink);border-radius:14px;background:var(--surface-2);padding:8px 11px;
+  box-shadow:3px 3px 0 var(--shadow);transition:transform .1s ease,box-shadow .1s ease;
+}
+.card:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--shadow)}
+.dot{width:17px;height:17px;border-radius:50%;border:2.5px solid var(--ink);flex:none}
+.card .txt{min-width:0}
+.card .t{font-weight:600;font-size:14.5px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .s{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.blank{color:var(--ink-soft);font-size:15px;line-height:1.5;margin:0}
+.foot{color:var(--ink-soft);font-size:13px;text-align:center;line-height:1.6;margin:4px 0 0}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div id="mark" aria-hidden="true"></div>
+      <div>
+        <h1>Instrument Mixer</h1>
+        <div class="sub">Tap two instruments. Hear what they make.</div>
+      </div>
+    </div>
+    <div class="tally"><b id="tallyNum">0</b><span>found</span></div>
+  </header>
+
+  <div class="stage">
+    <div class="groups" id="groups"></div>
+
+    <div class="bench-col">
+      <section class="bench" id="bench" aria-live="polite"></section>
+    </div>
+  </div>
+
+  <section class="album">
+    <div class="album-head">
+      <h2>Instruments you invented</h2>
+      <div class="count"><span id="foundN">0</span> of 210 possible mixes</div>
+    </div>
+    <div id="albumBody"></div>
+  </section>
+
+  <p class="foot">No sound? Check that the iPad is not on Silent and the volume is up.</p>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. INSTRUMENT DEFINITIONS
+   s = synth recipe (blended numerically to invent new timbres)
+   tr = how it is built (blended to draw the invented instrument)
+   head/tail = name pieces: Tru + ngo = Trungo
+   ============================================================ */
+const DEF = {
+  f:440, par:[1,.4,.2,.1,.05,.02,.01,0], inh:0,
+  atk:.02, dec:.3, sus:0, rel:.2, dur:1,
+  noise:0, nDec:.1, nF:2000, nQ:1,
+  cut:3000, cutE:1.5, q:1,
+  vibR:5, vibD:0, det:0,
+  hits:1, gap:.1, step:0, drop:0, dropT:.05
+};
+const T0 = {brass:0,wind:0,string:0,key:0,perc:0,metal:0};
+
+const RAW = [
+ {id:"trumpet",name:"Trumpet",grp:"blow",color:"#F0A81E",head:"Tru",tail:"pet",
+  tr:{brass:1,metal:.25,wind:.15},
+  s:{f:466,par:[1,.8,.7,.55,.4,.3,.2,.12],atk:.05,dec:.12,sus:.85,rel:.18,dur:1.05,
+     noise:.07,nDec:.07,nF:3200,nQ:1.2,cut:3400,cutE:1.7,q:1.2,vibR:5.5,vibD:12,det:5}},
+
+ {id:"tuba",name:"Tuba",grp:"blow",color:"#A9772A",head:"Tu",tail:"ba",
+  tr:{brass:1,metal:.25},
+  s:{f:87.3,par:[1,.6,.36,.2,.12,.07,.04,.02],atk:.09,dec:.15,sus:.9,rel:.25,dur:1.3,
+     noise:.06,nDec:.12,nF:500,nQ:1,cut:900,cutE:1.5,vibR:4,vibD:6,det:4}},
+
+ {id:"sax",name:"Saxophone",grp:"blow",color:"#E9622C",head:"Saxo",tail:"ax",
+  tr:{brass:.5,wind:.6,metal:.25},
+  s:{f:311,par:[1,.5,.72,.34,.46,.22,.16,.1],atk:.05,dec:.12,sus:.8,rel:.2,dur:1.05,
+     noise:.14,nDec:.35,nF:1800,nQ:2,cut:2600,cutE:1.6,q:1.4,vibR:5,vibD:16,det:5}},
+
+ {id:"flute",name:"Flute",grp:"blow",color:"#2FBCA3",head:"Flu",tail:"ute",
+  tr:{wind:1,metal:.15},
+  s:{f:880,par:[1,.18,.07,.03,.012,0,0,0],atk:.08,dec:.1,sus:.9,rel:.15,dur:1.05,
+     noise:.26,nDec:1,nF:4200,nQ:2.5,cut:5200,cutE:1.2,q:.7,vibR:5.5,vibD:10,det:2}},
+
+ {id:"kazoo",name:"Kazoo",grp:"blow",color:"#7DC63F",head:"Ka",tail:"zoo",
+  tr:{wind:.8,brass:.3},
+  s:{f:392,par:[1,.9,.85,.78,.6,.5,.4,.3],atk:.03,dec:.1,sus:.8,rel:.1,dur:.9,
+     noise:.2,nDec:.5,nF:1400,nQ:1.5,cut:2400,cutE:1.4,q:5,vibR:24,vibD:45,det:3}},
+
+ {id:"violin",name:"Violin",grp:"strings",color:"#D8365A",head:"Vio",tail:"lin",
+  tr:{string:1,wind:.1},
+  s:{f:659,par:[1,.7,.5,.45,.3,.25,.15,.1],atk:.13,dec:.15,sus:.85,rel:.3,dur:1.25,
+     noise:.09,nDec:.22,nF:2600,nQ:2,cut:3000,cutE:1.5,q:1.2,vibR:6,vibD:14,det:7}},
+
+ {id:"guitar",name:"Guitar",grp:"strings",color:"#8C5A34",head:"Gui",tail:"tar",
+  tr:{string:1},
+  s:{f:196,par:[1,.55,.4,.22,.15,.08,.05,.03],inh:.0006,atk:.005,dec:.9,sus:0,rel:.35,dur:1.4,
+     noise:.1,nDec:.05,nF:2600,nQ:1.5,cut:2800,cutE:1.9,det:3}},
+
+ {id:"banjo",name:"Banjo",grp:"strings",color:"#E0C63C",head:"Ban",tail:"jo",
+  tr:{string:.9,perc:.4},
+  s:{f:294,par:[1,.8,.7,.5,.45,.3,.25,.18],inh:.0015,atk:.003,dec:.5,sus:0,rel:.22,dur:.95,
+     noise:.16,nDec:.035,nF:3600,nQ:1.2,cut:4200,cutE:1.8,det:4}},
+
+ {id:"harp",name:"Harp",grp:"strings",color:"#3FA9D6",head:"Har",tail:"arp",
+  tr:{string:.9,key:.2},
+  s:{f:523,par:[1,.4,.25,.12,.07,.04,.02,.01],inh:.0005,atk:.006,dec:1.5,sus:0,rel:.6,dur:1.9,
+     noise:.05,nDec:.03,nF:3000,cut:3400,cutE:1.5,hits:4,gap:.08,step:4}},
+
+ {id:"piano",name:"Piano",grp:"strings",color:"#6A5BD0",head:"Pia",tail:"ano",
+  tr:{key:1,string:.45},
+  s:{f:262,par:[1,.5,.32,.2,.12,.09,.05,.03],inh:.0007,atk:.004,dec:1.3,sus:.08,rel:.5,dur:1.7,
+     noise:.09,nDec:.025,nF:1900,cut:3000,cutE:2}},
+
+ {id:"xylophone",name:"Xylophone",grp:"hit",color:"#D94FA6",head:"Xylo",tail:"lo",
+  tr:{key:.8,perc:.35,metal:.3},
+  s:{f:1046,par:[1,.02,.42,.02,.16,0,.06,0],inh:.02,atk:.002,dec:.34,sus:0,rel:.15,dur:.6,
+     noise:.17,nDec:.018,nF:5200,cut:6000,cutE:1.6}},
+
+ {id:"accordion",name:"Accordion",grp:"hit",color:"#9B54C9",head:"Accor",tail:"dion",
+  tr:{key:.85,wind:.5},
+  s:{f:349,par:[1,.6,.5,.35,.3,.2,.15,.1],atk:.08,dec:.12,sus:.9,rel:.12,dur:1.2,
+     noise:.07,nDec:.6,nF:900,cut:2400,cutE:1.3,det:15}},
+
+ {id:"drum",name:"Drum",grp:"hit",color:"#C4452F",head:"Dru",tail:"rum",
+  tr:{perc:1},
+  s:{f:98,par:[1,.3,.1,0,0,0,0,0],inh:.3,atk:.002,dec:.28,sus:0,rel:.12,dur:.55,
+     noise:.55,nDec:.13,nF:260,nQ:.8,cut:1200,cutE:2.2,drop:.5,dropT:.09}},
+
+ {id:"bongo",name:"Bongo",grp:"hit",color:"#E0A050",head:"Bon",tail:"ngo",
+  tr:{perc:1},
+  s:{f:220,par:[1,.35,.12,0,0,0,0,0],inh:.35,atk:.002,dec:.16,sus:0,rel:.07,dur:.45,
+     noise:.38,nDec:.055,nF:950,nQ:1.1,cut:2200,cutE:2,drop:.55,dropT:.05,hits:2,gap:.14,step:-5}},
+
+ {id:"gong",name:"Gong",grp:"hit",color:"#7C9AA6",head:"Go",tail:"ong",
+  tr:{metal:1,perc:.5},
+  s:{f:87,par:[1,.7,.9,.6,.8,.5,.45,.4],inh:.12,atk:.02,dec:2.8,sus:.06,rel:1.4,dur:3,
+     noise:.32,nDec:.9,nF:1500,nQ:.6,cut:2600,cutE:2.2,det:9}}
+];
+
+const INST = RAW.map(function(o){
+  return {id:o.id, name:o.name, grp:o.grp, color:o.color, head:o.head, tail:o.tail,
+          s:Object.assign({}, DEF, o.s), tr:Object.assign({}, T0, o.tr)};
+});
+const BY_ID = {};
+INST.forEach(function(i){ BY_ID[i.id] = i; });
+
+/* ============================================================
+   2. MIXING MATH
+   ============================================================ */
+const clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
+// geometric blend for anything measured in Hz or seconds
+const gm = function(a,b,w){ return Math.exp(w*Math.log(Math.max(a,1e-5)) + (1-w)*Math.log(Math.max(b,1e-5))); };
+// plain blend for amounts and depths
+const am = function(a,b,w){ return a*w + b*(1-w); };
+
+const W = 0.6; // the instrument tapped first leads the mix
+
+function mixSound(A, B){
+  const a = A.s, b = B.s, w = W;
+  return {
+    f:gm(a.f,b.f,w),
+    par:a.par.map(function(v,i){ return am(v,b.par[i],w); }),
+    inh:am(a.inh,b.inh,w),
+    atk:gm(a.atk,b.atk,w), dec:gm(a.dec,b.dec,w), rel:gm(a.rel,b.rel,w), dur:gm(a.dur,b.dur,w),
+    sus:am(a.sus,b.sus,w),
+    noise:am(a.noise,b.noise,w), nDec:gm(a.nDec,b.nDec,w), nF:gm(a.nF,b.nF,w), nQ:gm(a.nQ,b.nQ,w),
+    cut:gm(a.cut,b.cut,w), cutE:am(a.cutE,b.cutE,w), q:am(a.q,b.q,w),
+    vibR:gm(a.vibR,b.vibR,w), vibD:am(a.vibD,b.vibD,w), det:am(a.det,b.det,w),
+    hits:Math.max(1, Math.round(am(a.hits,b.hits,w))),
+    gap:gm(a.gap,b.gap,w), step:am(a.step,b.step,w),
+    drop:am(a.drop,b.drop,w), dropT:gm(a.dropT,b.dropT,w)
+  };
+}
+function mixTraits(A, B){
+  const o = {};
+  Object.keys(T0).forEach(function(k){ o[k] = am(A.tr[k], B.tr[k], W); });
+  return o;
+}
+function mashName(A, B){
+  let h = A.head, t = B.tail;
+  if (h.slice(-1).toLowerCase() === t[0].toLowerCase() && t.length > 1) t = t.slice(1);
+  let n = (h + t).replace(/(.)\1{2,}/g, "$1$1");
+  return n[0].toUpperCase() + n.slice(1);
+}
+
+/* ---- color mixing in HSL so red + blue stays vivid ---- */
+function hex2hsl(hex){
+  const r=parseInt(hex.slice(1,3),16)/255, g=parseInt(hex.slice(3,5),16)/255, b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2;
+  let h=0, s=0;
+  if (mx !== mn){
+    const d = mx-mn;
+    s = l > .5 ? d/(2-mx-mn) : d/(mx+mn);
+    if (mx===r) h=((g-b)/d + (g<b?6:0));
+    else if (mx===g) h=((b-r)/d + 2);
+    else h=((r-g)/d + 4);
+    h *= 60;
+  }
+  return [h,s,l];
+}
+function hsl2hex(h,s,l){
+  h=((h%360)+360)%360;
+  const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+  let r,g,b;
+  if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
+  const to=function(v){ return Math.round((v+m)*255).toString(16).padStart(2,"0"); };
+  return "#"+to(r)+to(g)+to(b);
+}
+function mixColor(c1, c2, w){
+  const A=hex2hsl(c1), B=hex2hsl(c2);
+  let d = B[0]-A[0];
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  const h = A[0] + d*(1-w);
+  const s = clamp(am(A[1],B[1],w) + .06, .42, .95);
+  const l = clamp(am(A[2],B[2],w), .46, .68);
+  return hsl2hex(h,s,l);
+}
+function tint(hex, amt){
+  const c=hex2hsl(hex);
+  return hsl2hex(c[0], clamp(c[1]-amt*.25,0,1), clamp(c[2]+amt,0,.96));
+}
+function hashStr(s){
+  let h = 2166136261;
+  for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0);
+}
+
+/* ============================================================
+   3. THE DRAWING ENGINE
+   One generator renders real instruments and invented ones,
+   so a hybrid grows the bell, neck, holes or drumhead it earned.
+   ============================================================ */
+function lowness(f){ return clamp(Math.log2(1100/Math.max(f,30))/4.2, 0, 1); }
+
+function smoothPath(pts){
+  let d = "M"+pts[0][0].toFixed(1)+","+pts[0][1].toFixed(1);
+  const n = pts.length;
+  for (let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+    const c1=[p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
+    const c2=[p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
+    d += "C"+c1[0].toFixed(1)+","+c1[1].toFixed(1)+" "+c2[0].toFixed(1)+","+c2[1].toFixed(1)+" "+p2[0].toFixed(1)+","+p2[1].toFixed(1);
+  }
+  return d + "Z";
+}
+
+function drawInstrument(tr, color, freq, seed){
+  const ink = "var(--glyph-ink)";
+  const body = color;
+  const light = tint(color, .26);
+  const dark = tint(color, -.18);
+  const rnd = function(n){ return ((hashStr(seed + ":" + n) % 1000) / 1000); };
+  const tilt = (rnd(1) - .5) * 14;
+  const low = lowness(freq);
+
+  const cx = 60, cy = 62;
+  const base = 20 + 13*low + 5*tr.perc + 4*tr.metal;
+
+  // radius profile: 8 points, index 0 = right, going clockwise
+  const prof = [1,1,1,1,1,1,1,1];
+  const waist = tr.string;                 // strings pinch in at the middle
+  const tube  = tr.wind;                   // wind narrows
+  const wide  = tr.key;                    // keyboards go wide and flat
+  for (let i=0;i<8;i++){
+    const ang = i*45;
+    const horiz = Math.abs(Math.cos(ang*Math.PI/180));
+    const vert  = Math.abs(Math.sin(ang*Math.PI/180));
+    let r = 1;
+    r *= 1 - .30*waist*(i%2===1?1:0);
+    r *= 1 - .48*tube*horiz;
+    r *= 1 + .34*waist*vert;
+    r *= 1 - .40*wide*vert;
+    r *= 1 + .30*wide*horiz;
+    r *= 1 + (rnd(10+i)-.5)*.09;
+    prof[i] = r;
+  }
+  const pts = [];
+  for (let i=0;i<8;i++){
+    const a = i*45*Math.PI/180;
+    pts.push([cx + Math.cos(a)*base*prof[i]*1.05, cy + Math.sin(a)*base*prof[i]]);
+  }
+
+  let g = "";
+
+  // neck + strings, drawn behind the body
+  if (tr.string > .22){
+    const len = 30 + 16*tr.string, nw = 7 + 2*tr.string;
+    g += '<g transform="rotate(-38 '+cx+' '+cy+')">'
+       + '<rect x="'+(cx-nw/2)+'" y="'+(cy-base-len)+'" width="'+nw+'" height="'+(len+base*.6)+'" rx="3" fill="'+dark+'" stroke="'+ink+'" stroke-width="3"/>'
+       + '<rect x="'+(cx-nw/2-3)+'" y="'+(cy-base-len-11)+'" width="'+(nw+6)+'" height="13" rx="3.5" fill="'+light+'" stroke="'+ink+'" stroke-width="3"/>'
+       + '</g>';
+  }
+
+  // body
+  g += '<path d="'+smoothPath(pts)+'" fill="'+body+'" stroke="'+ink+'" stroke-width="3.4" stroke-linejoin="round"/>';
+
+  // drumhead
+  if (tr.perc > .28){
+    const rr = base*(.62 + .12*tr.perc);
+    g += '<ellipse cx="'+cx+'" cy="'+(cy-base*.16)+'" rx="'+rr+'" ry="'+(rr*.72)+'" fill="'+light+'" stroke="'+ink+'" stroke-width="3"/>';
+    for (let i=0;i<3;i++){
+      const a = (-150 + i*60) * Math.PI/180;
+      g += '<circle cx="'+(cx+Math.cos(a)*rr*1.16).toFixed(1)+'" cy="'+(cy-base*.16+Math.sin(a)*rr*.95).toFixed(1)+'" r="2.6" fill="'+ink+'"/>';
+    }
+  }
+
+  // metal rings
+  if (tr.metal > .3){
+    g += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(base*.52)+'" fill="none" stroke="'+ink+'" stroke-width="2.4" opacity=".55"/>';
+    g += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(base*.26)+'" fill="'+light+'" stroke="'+ink+'" stroke-width="2.4"/>';
+  }
+
+  // keys / bars along the bottom
+  if (tr.key > .24){
+    const n = 5, w = (base*1.5)/n, x0 = cx - base*.75, y0 = cy + base*.36;
+    for (let i=0;i<n;i++){
+      const hgt = 13 + 5*tr.key - (i%2)*3;
+      g += '<rect x="'+(x0+i*w+1).toFixed(1)+'" y="'+y0.toFixed(1)+'" width="'+(w-2).toFixed(1)+'" height="'+hgt.toFixed(1)+'" rx="2" fill="'+(i%2?dark:light)+'" stroke="'+ink+'" stroke-width="2.4"/>';
+    }
+  }
+
+  // finger holes
+  if (tr.wind > .26){
+    const n = 3;
+    for (let i=0;i<n;i++){
+      g += '<circle cx="'+cx+'" cy="'+(cy-base*.45+i*(base*.5)).toFixed(1)+'" r="3.1" fill="'+ink+'"/>';
+    }
+  }
+
+  // brass bell
+  if (tr.brass > .2){
+    const bl = 16 + 18*tr.brass, bw = 9 + 15*tr.brass;
+    const x = cx + base*.78, y = cy - base*.12;
+    g += '<path d="M'+x+','+(y-4)+' L'+(x+bl)+','+(y-bw)+' Q'+(x+bl+7)+','+y+' '+(x+bl)+','+(y+bw)+' L'+x+','+(y+4)+' Z" fill="'+light+'" stroke="'+ink+'" stroke-width="3.2" stroke-linejoin="round"/>';
+  }
+
+  // strings across the neck
+  if (tr.string > .22){
+    const len = 30 + 16*tr.string;
+    g += '<g transform="rotate(-38 '+cx+' '+cy+')" stroke="'+ink+'" stroke-width="1.5" opacity=".8">';
+    for (let i=-1;i<=1;i++){
+      g += '<line x1="'+(cx+i*2.4)+'" y1="'+(cy-base-len-4)+'" x2="'+(cx+i*3.4)+'" y2="'+(cy+base*.3)+'"/>';
+    }
+    g += '</g>';
+  }
+
+  // highlight
+  g += '<circle cx="'+(cx-base*.42).toFixed(1)+'" cy="'+(cy-base*.5).toFixed(1)+'" r="'+(base*.16).toFixed(1)+'" fill="#fff" opacity=".45"/>';
+
+  return '<svg viewBox="0 0 120 124" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">'
+       + '<g transform="rotate('+tilt.toFixed(1)+' 60 62)">'+g+'</g></svg>';
+}
+
+/* ============================================================
+   4. AUDIO
+   ============================================================ */
+let ctx = null, bus = null, noiseBuf = null;
+
+function initAudio(){
+  if (ctx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  ctx = new AC();
+
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 4;
+  comp.attack.value = .004; comp.release.value = .2;
+  const out = ctx.createGain(); out.gain.value = .95;
+  comp.connect(out); out.connect(ctx.destination);
+
+  // small synthesized room so mixes do not sound bone dry
+  const ir = ctx.createBuffer(2, Math.floor(ctx.sampleRate*1.3), ctx.sampleRate);
+  for (let c=0;c<2;c++){
+    const d = ir.getChannelData(c);
+    for (let i=0;i<d.length;i++){
+      d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2.7);
+    }
+  }
+  const conv = ctx.createConvolver(); conv.buffer = ir;
+  const wet = ctx.createGain(); wet.gain.value = .17;
+  comp.connect(conv); conv.connect(wet); wet.connect(ctx.destination);
+
+  noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*2), ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i=0;i<nd.length;i++) nd[i] = Math.random()*2-1;
+
+  bus = comp;
+}
+function unlock(){
+  initAudio();
+  if (ctx && ctx.state === "suspended") ctx.resume();
+}
+
+function env(param, t, peak, atk, dec, sus, dur, rel){
+  const eps = .0001;
+  const pk = Math.max(peak, eps);
+  param.setValueAtTime(eps, t);
+  param.exponentialRampToValueAtTime(pk, t + Math.max(atk, .002));
+  const susV = Math.max(pk*sus, eps);
+  const decEnd = t + Math.max(atk,.002) + Math.max(dec,.01);
+  param.exponentialRampToValueAtTime(susV, decEnd);
+  const relStart = Math.max(decEnd, t + dur - rel);
+  param.setValueAtTime(susV, relStart);
+  param.exponentialRampToValueAtTime(eps, relStart + Math.max(rel,.02));
+  return relStart + Math.max(rel,.02);
+}
+
+function voice(s, f, t, amp){
+  const outG = ctx.createGain();
+  const filt = ctx.createBiquadFilter();
+  filt.type = "lowpass"; filt.Q.value = clamp(s.q,.1,12);
+  filt.frequency.setValueAtTime(clamp(s.cut*s.cutE,90,17000), t);
+  filt.frequency.exponentialRampToValueAtTime(clamp(s.cut,90,17000), t + Math.min(1.4, s.atk + s.dec) + .02);
+  filt.connect(outG); outG.connect(bus);
+
+  const end = env(outG.gain, t, .5*amp, s.atk, s.dec, s.sus, s.dur, s.rel);
+
+  let lg = null;
+  if (s.vibD > .5){
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = clamp(s.vibR,.5,30);
+    lg = ctx.createGain();
+    lg.gain.setValueAtTime(0, t);
+    lg.gain.linearRampToValueAtTime(s.vibD, t + Math.min(.4, s.dur*.55));
+    lfo.connect(lg); lfo.start(t); lfo.stop(end + .05);
+    lfo.onended = function(){ lfo.disconnect(); lg.disconnect(); };
+  }
+
+  let sum = 0;
+  for (let i=0;i<s.par.length;i++) sum += s.par[i];
+  if (sum <= 0) sum = 1;
+
+  s.par.forEach(function(a, i){
+    if (a < .012) return;
+    const n = i + 1;
+    const pf = f * n * Math.sqrt(1 + s.inh*n*n);
+    if (pf > 16500 || pf < 18) return;
+    const o = ctx.createOscillator(); o.type = "sine";
+    const g = ctx.createGain(); g.gain.value = a/sum;
+    if (s.drop > .01){
+      o.frequency.setValueAtTime(pf*(1+s.drop), t);
+      o.frequency.exponentialRampToValueAtTime(pf, t + Math.max(.012, s.dropT));
+    } else {
+      o.frequency.setValueAtTime(pf, t);
+    }
+    o.detune.value = (n%2 ? 1 : -1) * s.det;
+    if (lg) lg.connect(o.detune);
+    o.connect(g); g.connect(filt);
+    o.start(t); o.stop(end + .05);
+    o.onended = function(){ o.disconnect(); g.disconnect(); };
+  });
+
+  if (s.noise > .012){
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+    bp.frequency.value = clamp(s.nF,70,14000); bp.Q.value = clamp(s.nQ,.2,12);
+    const ng = ctx.createGain();
+    const nDur = Math.max(s.nDec, s.dur*.55);
+    const nEnd = env(ng.gain, t, .45*s.noise*amp, Math.min(.025, s.atk), s.nDec, 0, nDur, .05);
+    src.connect(bp); bp.connect(ng); ng.connect(bus);
+    src.start(t); src.stop(nEnd + .05);
+    src.onended = function(){ src.disconnect(); bp.disconnect(); ng.disconnect(); };
+  }
+  return end;
+}
+
+function play(s){
+  unlock();
+  if (!ctx || !bus) return 900;
+  const t0 = ctx.currentTime + .03;
+  const hits = clamp(s.hits, 1, 6);
+  let end = t0;
+  for (let h=0; h<hits; h++){
+    const t = t0 + h*s.gap;
+    const f = s.f * Math.pow(2, (s.step*h)/12);
+    end = Math.max(end, voice(s, clamp(f,25,4500), t, h===0 ? 1 : .78));
+  }
+  return Math.round((end - ctx.currentTime) * 1000);
+}
+
+/* ============================================================
+   5. STATE + UI
+   ============================================================ */
+const KEY = "instrument-mixer.found.v2";
+let found = {};
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) found = JSON.parse(raw) || {};
+} catch (e) { found = {}; }
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(found)); } catch (e) {}
+}
+
+let picks = [];
+let current = null;   // {a,b,name,sound,traits,color,seed}
+let isExample = false;
+let wobbleTimer = null;
+
+const groupsEl = document.getElementById("groups");
+const benchEl  = document.getElementById("bench");
+const albumEl  = document.getElementById("albumBody");
+const tallyEl  = document.getElementById("tallyNum");
+const foundNEl = document.getElementById("foundN");
+
+const GROUPS = [
+  {id:"blow",    label:"Blow into it"},
+  {id:"strings", label:"Pluck &amp; press"},
+  {id:"hit",     label:"Hit it"}
+];
+
+function buildGrid(){
+  groupsEl.innerHTML = GROUPS.map(function(g){
+    const tiles = INST.filter(function(i){ return i.grp === g.id; }).map(function(i){
+      return '<button class="pick" type="button" data-id="'+i.id+'" aria-pressed="false">'
+           + '<span class="chip" style="background:'+i.color+'">'+drawInstrument(i.tr, i.color, i.s.f, i.id)+'</span>'
+           + '<span class="nm">'+i.name+'</span></button>';
+    }).join("");
+    return '<div><div class="grp-label">'+g.label+'</div><div class="grid">'+tiles+'</div></div>';
+  }).join("");
+
+  groupsEl.querySelectorAll(".pick").forEach(function(btn){
+    btn.addEventListener("click", function(){ tapInstrument(btn.dataset.id); });
+  });
+}
+
+function syncPressed(){
+  groupsEl.querySelectorAll(".pick").forEach(function(btn){
+    btn.setAttribute("aria-pressed", picks.indexOf(btn.dataset.id) !== -1 ? "true" : "false");
+  });
+}
+
+function makeMix(aId, bId){
+  const A = BY_ID[aId], B = BY_ID[bId];
+  const seed = aId + ">" + bId;
+  return {
+    a:A, b:B, key:seed, seed:seed,
+    name:mashName(A,B),
+    sound:mixSound(A,B),
+    traits:mixTraits(A,B),
+    color:mixColor(A.color, B.color, .55)
+  };
+}
+
+function tapInstrument(id){
+  unlock();
+  if (picks.length >= 2) picks = [];
+  const at = picks.indexOf(id);
+  if (at !== -1){
+    picks.splice(at, 1);
+    syncPressed();
+    renderBench();
+    return;
+  }
+  picks.push(id);
+  syncPressed();
+
+  if (picks.length === 1){
+    current = null; isExample = false;
+    play(BY_ID[id].s);
+    renderBench();
+  } else {
+    current = makeMix(picks[0], picks[1]);
+    isExample = false;
+    if (!found[current.key]){
+      found[current.key] = {n:current.name, a:picks[0], b:picks[1], at:Date.now()};
+      save();
+    }
+    renderBench();
+    playCurrent();
+    renderAlbum();
+  }
+}
+
+function playCurrent(){
+  if (!current) return;
+  const ms = play(current.sound);
+  benchEl.classList.add("playing");
+  clearTimeout(wobbleTimer);
+  wobbleTimer = setTimeout(function(){ benchEl.classList.remove("playing"); }, Math.min(ms, 1400));
+}
+
+function slot(inst, big){
+  if (!inst) {
+    return '<div class="slot'+(big?" big":"")+'"><span class="box empty">?</span><span class="cap">&nbsp;</span></div>';
+  }
+  return '<div class="slot'+(big?" big":"")+'">'
+       + '<span class="box" style="background:'+inst.color+'">'+inst.svg+'</span>'
+       + '<span class="cap">'+inst.label+'</span></div>';
+}
+
+function renderBench(){
+  if (current){
+    const A = current.a, B = current.b;
+    const a = {color:A.color, svg:drawInstrument(A.tr, A.color, A.s.f, A.id), label:A.name};
+    const b = {color:B.color, svg:drawInstrument(B.tr, B.color, B.s.f, B.id), label:B.name};
+    const m = {color:current.color,
+               svg:drawInstrument(current.traits, current.color, current.sound.f, current.seed),
+               label:"brand new"};
+    benchEl.innerHTML =
+        '<div class="eyebrow">'+(isExample ? "For example" : "You invented")+'</div>'
+      + '<h2 class="newname">'+current.name+'</h2>'
+      + '<div class="eq">'+slot(a)+'<span class="op">+</span>'+slot(b)+'<span class="op">=</span>'+slot(m,true)+'</div>'
+      + '<div class="acts">'
+      + '<button class="btn primary" type="button" id="again">Play it again</button>'
+      + '<button class="btn" type="button" id="clear">Mix another</button>'
+      + '</div>';
+    document.getElementById("again").addEventListener("click", playCurrent);
+    document.getElementById("clear").addEventListener("click", function(){
+      picks = []; current = null; isExample = false;
+      syncPressed(); renderBench();
+    });
+    return;
+  }
+
+  const one = picks.length === 1 ? BY_ID[picks[0]] : null;
+  const a = one ? {color:one.color, svg:drawInstrument(one.tr,one.color,one.s.f,one.id), label:one.name} : null;
+  benchEl.innerHTML =
+      '<div class="eyebrow">Mixing bench</div>'
+    + '<div class="eq">'+slot(a)+'<span class="op">+</span>'+slot(null)+'<span class="op">=</span>'+slot(null,true)+'</div>'
+    + '<p class="hint">'+(one ? "Now pick one more and hear what happens." : "Pick any two instruments above.")+'</p>';
+}
+
+function renderAlbum(){
+  const keys = Object.keys(found);
+  tallyEl.textContent = keys.length;
+  foundNEl.textContent = keys.length;
+
+  if (!keys.length){
+    albumEl.innerHTML = '<p class="blank">Nothing here yet. Every pair of instruments makes a different one, so there are 210 to find.</p>';
+    return;
+  }
+  keys.sort(function(x,y){ return found[y].at - found[x].at; });
+  const shown = keys.slice(0, 60);
+  albumEl.innerHTML = '<div class="found">' + shown.map(function(k){
+    const f = found[k], A = BY_ID[f.a], B = BY_ID[f.b];
+    if (!A || !B) return "";
+    return '<button class="card" type="button" data-a="'+f.a+'" data-b="'+f.b+'">'
+         + '<span class="dot" style="background:'+mixColor(A.color,B.color,.55)+'"></span>'
+         + '<span class="txt"><span class="t">'+f.n+'</span>'
+         + '<span class="s">'+A.name+' + '+B.name+'</span></span></button>';
+  }).join("") + '</div>'
+  + (keys.length > 60 ? '<p class="foot">and '+(keys.length-60)+' more</p>' : "");
+
+  albumEl.querySelectorAll(".card").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      picks = [btn.dataset.a, btn.dataset.b];
+      current = makeMix(picks[0], picks[1]);
+      isExample = false;
+      syncPressed(); renderBench(); playCurrent();
+      benchEl.scrollIntoView({behavior:"smooth", block:"center"});
+    });
+  });
+}
+
+/* ---- opening state: a real mix already on the bench ---- */
+function openingState(){
+  const keys = Object.keys(found);
+  if (keys.length){
+    keys.sort(function(x,y){ return found[y].at - found[x].at; });
+    const f = found[keys[0]];
+    if (BY_ID[f.a] && BY_ID[f.b]){
+      picks = [f.a, f.b];
+      current = makeMix(f.a, f.b);
+      isExample = false;
+      syncPressed();
+      return;
+    }
+  }
+  current = makeMix("trumpet", "bongo");
+  isExample = true;
+}
+
+document.getElementById("mark").innerHTML =
+  '<span style="display:block;width:52px;height:52px;border:3px solid var(--ink);border-radius:15px;'
++ 'box-shadow:4px 4px 0 var(--shadow);overflow:hidden;background:'
++ mixColor(BY_ID.trumpet.color, BY_ID.bongo.color, .55) + '">'
++ drawInstrument(mixTraits(BY_ID.trumpet, BY_ID.bongo), mixColor(BY_ID.trumpet.color, BY_ID.bongo.color,.55),
+                 mixSound(BY_ID.trumpet, BY_ID.bongo).f, "mark") + '</span>';
+
+buildGrid();
+openingState();
+renderBench();
+renderAlbum();
+
+window.addEventListener("touchstart", unlock, {once:true, passive:true});
+window.addEventListener("pointerdown", unlock, {once:true});
+</script>
