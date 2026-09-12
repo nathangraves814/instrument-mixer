@@ -102,7 +102,7 @@ button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
   display:grid;place-items:center;overflow:hidden;
   transition:transform .1s ease,box-shadow .1s ease;
 }
-.chip svg{width:84%;height:84%;display:block}
+.chip svg,.slot .box svg{width:94%;height:94%;display:block}
 .pick .nm{font-size:clamp(11px,1.5vw,13.5px);line-height:1.15;text-align:center;color:var(--ink)}
 .pick:active .chip{transform:translate(4px,4px);box-shadow:0 0 0 var(--shadow)}
 .pick[aria-pressed="true"] .chip{
@@ -330,11 +330,6 @@ function mixSound(A, B){
     drop:am(a.drop,b.drop,w), dropT:gm(a.dropT,b.dropT,w)
   };
 }
-function mixTraits(A, B){
-  const o = {};
-  Object.keys(T0).forEach(function(k){ o[k] = am(A.tr[k], B.tr[k], W); });
-  return o;
-}
 function mashName(A, B){
   let h = A.head, t = B.tail;
   if (h.slice(-1).toLowerCase() === t[0].toLowerCase() && t.length > 1) t = t.slice(1);
@@ -387,129 +382,306 @@ function hashStr(s){
 }
 
 /* ============================================================
-   3. THE DRAWING ENGINE
-   One generator renders real instruments and invented ones,
-   so a hybrid grows the bell, neck, holes or drumhead it earned.
+   3. THE ICONS
+   Every instrument is drawn as a body plus a feature: the one
+   part a child uses to recognize it (the trumpet's bell, the
+   piano's black keys, the accordion's bellows, the banjo neck).
+   Tile icon  = body + its own feature.
+   Invented   = first instrument's body + second one's feature,
+                so the bell learned on the trumpet tile is the
+                same bell that shows up on the Trungo.
    ============================================================ */
-function lowness(f){ return clamp(Math.log2(1100/Math.max(f,30))/4.2, 0, 1); }
+const INK = "#2A2135";
+const WHT = "#FFFFFF";
 
-function smoothPath(pts){
-  let d = "M"+pts[0][0].toFixed(1)+","+pts[0][1].toFixed(1);
-  const n = pts.length;
-  for (let i=0;i<n;i++){
-    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
-    const c1=[p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6];
-    const c2=[p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6];
-    d += "C"+c1[0].toFixed(1)+","+c1[1].toFixed(1)+" "+c2[0].toFixed(1)+","+c2[1].toFixed(1)+" "+p2[0].toFixed(1)+","+p2[1].toFixed(1);
+function P(d, fill, sw){
+  sw = (sw === undefined ? 3.6 : sw);
+  return '<path d="'+d+'" fill="'+(fill||"none")+'"'
+       + (sw ? ' stroke="'+INK+'" stroke-width="'+sw+'" stroke-linejoin="round" stroke-linecap="round"' : "")
+       + '/>';
+}
+function R(x,y,w,h,r,fill,sw){
+  sw = (sw === undefined ? 3.6 : sw);
+  return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="'+r+'" fill="'+fill+'"'
+       + (sw ? ' stroke="'+INK+'" stroke-width="'+sw+'" stroke-linejoin="round"' : "") + '/>';
+}
+function C(x,y,r,fill,sw){
+  sw = (sw === undefined ? 3.6 : sw);
+  return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+fill+'"'
+       + (sw ? ' stroke="'+INK+'" stroke-width="'+sw+'"' : "") + '/>';
+}
+function E(x,y,rx,ry,fill,sw){
+  sw = (sw === undefined ? 3.6 : sw);
+  return '<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+fill+'"'
+       + (sw ? ' stroke="'+INK+'" stroke-width="'+sw+'"' : "") + '/>';
+}
+// a stroked path in one colour
+function S(d, col, sw){
+  return '<path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+// a thick coloured tube with an ink outline around it
+function tube(d, col, w){ return S(d, INK, w+6) + S(d, col, w); }
+
+function pal(hex){ return {m:hex, l:tint(hex,.30), d:tint(hex,-.20)}; }
+function wash(hex){ const c = hex2hsl(hex); return hsl2hex(c[0], clamp(c[1]*.5,0,1), .93); }
+
+/* ---- the fifteen -------------------------------------------------
+   anchor: [x, y, rotation, scale] where this instrument's own
+   feature attaches. Features are drawn in local coordinates with
+   the join at (0,0), extending along +x, roughly 46 units long.  */
+const ART = {};
+
+ART.trumpet = {
+  anchor:[80,59,0,1],
+  body:function(c){
+    return C(16,59,7,c.d)
+         + R(22,52,16,14,5,c.m)
+         + R(30,49,52,21,10,c.m)
+         + R(40,29,11,23,4,c.d) + R(54,29,11,23,4,c.d) + R(68,29,11,23,4,c.d)
+         + C(45.5,27,5.5,c.l) + C(59.5,27,5.5,c.l) + C(73.5,27,5.5,c.l);
+  },
+  feat:function(c){
+    return P("M0,-11 L28,-26 Q40,0 28,26 L0,11 Z", c.l)
+         + S("M28,-26 Q40,0 28,26", INK, 2.2);
   }
-  return d + "Z";
+};
+
+ART.tuba = {
+  anchor:[58,58,-90,1.2],
+  body:function(c){
+    return C(20,66,7,c.d) + R(25,59,16,14,5,c.m)
+         + E(58,82,30,25,c.m)
+         + R(44,60,10,17,3,c.d) + R(57,60,10,17,3,c.d) + R(70,60,10,17,3,c.d)
+         + C(49,58,4.6,c.l) + C(62,58,4.6,c.l) + C(75,58,4.6,c.l);
+  },
+  feat:function(c){
+    return P("M0,-12 L30,-30 Q44,0 30,30 L0,12 Z", c.l)
+         + S("M30,-30 Q44,0 30,30", INK, 2.2);
+  }
+};
+
+ART.sax = {
+  anchor:[70,86,-42,1],
+  body:function(c){
+    return P("M38,8 L54,8 L52,20 L40,20 Z", c.d)
+         + tube("M46,18 L46,62 Q46,86 70,86", c.m, 15)
+         + C(54,34,4.2,c.d,2.4) + C(54,46,4.2,c.d,2.4) + C(54,58,4.2,c.d,2.4);
+  },
+  feat:function(c){
+    return P("M0,-12 L28,-27 Q42,0 28,27 L0,12 Z", c.l)
+         + C(9,-2,3.4,c.d,2.2) + C(17,4,3.4,c.d,2.2);
+  }
+};
+
+ART.flute = {
+  anchor:[62,60,0,1],
+  body:function(c){
+    return R(8,51,56,18,9,c.m)
+         + E(22,51,9,5,c.d)
+         + R(38,44,9,9,2,c.d,2.4) + R(50,44,9,9,2,c.d,2.4);
+  },
+  feat:function(c){
+    return R(0,-9,44,18,9,c.m)
+         + C(11,0,3.6,INK,0) + C(22,0,3.6,INK,0) + C(33,0,3.6,INK,0)
+         + R(38,-10,9,20,3,c.d,2.4);
+  }
+};
+
+ART.kazoo = {
+  anchor:[52,52,-90,1],
+  body:function(c){
+    return P("M20,44 L8,36 L8,90 L20,82 Z", c.d)
+         + R(18,50,74,26,13,c.m)
+         + C(84,63,7,c.d,2.4);
+  },
+  feat:function(c){
+    return R(0,-10,22,20,4,c.l) + C(25,0,8,c.l) + C(25,0,3.4,INK,0);
+  }
+};
+
+ART.violin = {
+  anchor:[60,48,-90,0.82],
+  body:function(c){
+    return tube("M12,102 L104,50", c.d, 4)
+         + P("M60,46 C72,46 80,54 80,63 C80,69 73,72 73,77 C73,83 83,86 83,95 C83,106 72,112 60,112 C48,112 37,106 37,95 C37,86 47,83 47,77 C47,72 40,69 40,63 C40,54 48,46 60,46 Z", c.m)
+         + S("M50,76 q-4,7 0,13", INK, 3) + S("M70,76 q4,7 0,13", INK, 3)
+         + R(52,92,16,5,1,c.d,2.2)
+         + S("M56,50 L56,94", INK, 1.2) + S("M59,50 L59,94", INK, 1.2)
+         + S("M62,50 L62,94", INK, 1.2) + S("M65,50 L65,94", INK, 1.2);
+  },
+  feat:function(c){
+    return R(0,-6.5,30,13,3,c.d)
+         + R(27,-9,12,18,3,c.l)
+         + C(44,-1,8,c.l) + C(44,-1,3,INK,0)
+         + C(31,-12,2.6,INK,0) + C(31,10,2.6,INK,0);
+  }
+};
+
+ART.guitar = {
+  anchor:[60,58,-90,1.05],
+  body:function(c){
+    return P("M60,56 C73,56 82,64 82,73 C82,79 74,82 74,88 C74,95 87,99 87,107 C87,116 75,120 60,120 C45,120 33,116 33,107 C33,99 46,95 46,88 C46,82 38,79 38,73 C38,64 47,56 60,56 Z", c.m)
+         + C(60,90,12,c.d,2.6) + C(60,90,8.5,INK,0)
+         + R(47,106,26,7,2,c.d,2.4)
+         + S("M52,60 L52,108", INK, 1.2) + S("M56,60 L56,108", INK, 1.2)
+         + S("M60,60 L60,108", INK, 1.2) + S("M64,60 L64,108", INK, 1.2)
+         + S("M68,60 L68,108", INK, 1.2);
+  },
+  feat:function(c){
+    return R(0,-7,34,14,3,c.d)
+         + S("M11,-7 L11,7", INK, 1.8) + S("M20,-7 L20,7", INK, 1.8) + S("M29,-7 L29,7", INK, 1.8)
+         + R(32,-10.5,15,21,3,c.l)
+         + C(37,-6,2.4,INK,0) + C(43,-6,2.4,INK,0)
+         + C(37,6,2.4,INK,0) + C(43,6,2.4,INK,0);
+  }
+};
+
+ART.banjo = {
+  anchor:[66,64,-50,1],
+  body:function(c){
+    let g = C(48,84,30,c.m) + C(48,84,21,c.l);
+    for (let i=0;i<8;i++){
+      const a = i*45*Math.PI/180;
+      g += C((48+Math.cos(a)*25.5).toFixed(1), (84+Math.sin(a)*25.5).toFixed(1), 2.8, INK, 0);
+    }
+    return g + R(40,100,16,5,1.5,c.d,2.2);
+  },
+  feat:function(c){
+    return R(0,-6.5,32,13,3,c.d)
+         + S("M10,-6.5 L10,6.5", INK, 1.8) + S("M19,-6.5 L19,6.5", INK, 1.8)
+         + P("M30,-9 L46,-13 L46,9 L30,9 Z", c.l)
+         + C(37,-6,2.4,INK,0) + C(43,-6,2.4,INK,0) + C(40,4,2.4,INK,0);
+  }
+};
+
+ART.harp = {
+  anchor:[42,28,12,1],
+  body:function(c){
+    return tube("M36,104 L88,50", c.m, 15)
+         + tube("M30,102 L42,28", c.m, 11)
+         + R(20,98,28,13,4,c.d);
+  },
+  feat:function(c){
+    let g = tube("M0,0 Q24,-13 46,6", c.l, 9);
+    for (let i=1;i<=6;i++){
+      const t = i/7;
+      const x = 2*(1-t)*t*24 + t*t*46;
+      const y = 2*(1-t)*t*(-13) + t*t*6;
+      g += S("M"+x.toFixed(1)+","+y.toFixed(1)+" L"+(x+6).toFixed(1)+","+(y+30).toFixed(1), INK, 1.6);
+    }
+    return g;
+  }
+};
+
+ART.piano = {
+  anchor:[15,80,0,2.0],
+  body:function(c){
+    return R(12,32,96,30,6,c.m)
+         + R(18,38,84,10,3,c.d,2.4);
+  },
+  feat:function(c){
+    let g = R(0,-9,46,18,2,WHT);
+    for (let i=1;i<7;i++) g += S("M"+(i*6.57).toFixed(2)+",-9 L"+(i*6.57).toFixed(2)+",9", INK, 1.3);
+    [4.4,10.9,24.1,30.7,37.2].forEach(function(x){
+      g += R(x,-9,4.4,11,1,INK,0);
+    });
+    return g;
+  }
+};
+
+ART.xylophone = {
+  anchor:[24,58,0,1.55],
+  body:function(c){
+    return P("M16,102 L27,70 L101,70 L110,102 Z", c.d)
+         + tube("M74,106 L102,60", c.d, 5) + C(104,56,8,c.l);
+  },
+  feat:function(c){
+    let g = "";
+    for (let i=0;i<5;i++){
+      const h = 27 - i*4;
+      g += R(i*9, -h/2, 7, h, 2.5, tint(c.m, i*0.13));
+    }
+    return g;
+  }
+};
+
+ART.accordion = {
+  anchor:[78,61,180,1],
+  body:function(c){
+    return R(74,30,34,62,6,c.m)
+         + C(92,44,4,c.d,2.2) + C(92,58,4,c.d,2.2) + C(92,72,4,c.d,2.2)
+         + C(82,51,4,c.d,2.2) + C(82,65,4,c.d,2.2);
+  },
+  feat:function(c){
+    let g = R(0,-25,34,50,2,c.l);
+    for (let i=1;i<=5;i++){
+      const x = i*5.6;
+      g += S("M"+x.toFixed(1)+",-25 L"+(x+4).toFixed(1)+",0 L"+x.toFixed(1)+",25", INK, 2.2);
+    }
+    return g + R(32,-27,14,54,4,c.m);
+  }
+};
+
+ART.drum = {
+  anchor:[58,44,-28,1],
+  body:function(c){
+    return P("M22,56 L22,90 Q22,102 60,102 Q98,102 98,90 L98,56 Z", c.m)
+         + E(60,56,38,12,c.l)
+         + S("M28,62 L46,94 L64,62 L82,94 L96,66", INK, 2.6);
+  },
+  feat:function(c){
+    return tube("M0,7 L42,-9", c.d, 5) + C(45,-10,6.5,c.l)
+         + tube("M0,-7 L42,9", c.d, 5) + C(45,10,6.5,c.l);
+  }
+};
+
+ART.bongo = {
+  anchor:[84,72,0,0.82],
+  body:function(c){
+    return P("M24,58 L24,90 Q24,102 54,102 Q84,102 84,90 L84,58 Z", c.m)
+         + E(54,58,30,11,c.l)
+         + C(30,72,2.8,INK,0) + C(78,72,2.8,INK,0) + C(54,90,2.8,INK,0);
+  },
+  feat:function(c){
+    return P("M0,-14 L0,12 Q0,22 21,22 Q42,22 42,12 L42,-14 Z", c.m)
+         + E(21,-14,21,8,c.l);
+  }
+};
+
+ART.gong = {
+  anchor:[60,72,0,1],
+  featInSolo:false,
+  body:function(c){
+    return tube("M20,108 L33,36", c.d, 6) + tube("M100,108 L87,36", c.d, 6)
+         + tube("M30,33 L90,33", c.d, 6)
+         + S("M47,35 L52,48", INK, 2.4) + S("M73,35 L68,48", INK, 2.4)
+         + C(60,74,28,c.m) + C(60,74,19,c.l,2.6) + C(60,74,8,c.d,2.6);
+  },
+  feat:function(c){
+    return S("M0,-12 L14,-15", INK, 2.4)
+         + C(23,2,20,c.m) + C(23,2,13,c.l,2.4) + C(23,2,5.5,c.d,2.4);
+  }
+};
+
+/* ---- assembling ---- */
+function svgWrap(inner){
+  return '<svg viewBox="0 0 120 124" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+inner+'</svg>';
+}
+function place(featSvg, a, maxScale){
+  const s = (maxScale ? Math.min(a[3], maxScale) : a[3]);
+  return '<g transform="translate('+a[0]+','+a[1]+') rotate('+a[2]+') scale('+s+')">'+featSvg+'</g>';
 }
 
-function drawInstrument(tr, color, freq, seed){
-  const ink = "var(--glyph-ink)";
-  const body = color;
-  const light = tint(color, .26);
-  const dark = tint(color, -.18);
-  const rnd = function(n){ return ((hashStr(seed + ":" + n) % 1000) / 1000); };
-  const tilt = (rnd(1) - .5) * 14;
-  const low = lowness(freq);
+function iconSolo(inst){
+  const art = ART[inst.id], c = pal(inst.color);
+  const feature = (art.featInSolo === false) ? "" : place(art.feat(c), art.anchor);
+  return svgWrap(feature + art.body(c));
+}
 
-  const cx = 60, cy = 62;
-  const base = 20 + 13*low + 5*tr.perc + 4*tr.metal;
-
-  // radius profile: 8 points, index 0 = right, going clockwise
-  const prof = [1,1,1,1,1,1,1,1];
-  const waist = tr.string;                 // strings pinch in at the middle
-  const tube  = tr.wind;                   // wind narrows
-  const wide  = tr.key;                    // keyboards go wide and flat
-  for (let i=0;i<8;i++){
-    const ang = i*45;
-    const horiz = Math.abs(Math.cos(ang*Math.PI/180));
-    const vert  = Math.abs(Math.sin(ang*Math.PI/180));
-    let r = 1;
-    r *= 1 - .30*waist*(i%2===1?1:0);
-    r *= 1 - .48*tube*horiz;
-    r *= 1 + .34*waist*vert;
-    r *= 1 - .40*wide*vert;
-    r *= 1 + .30*wide*horiz;
-    r *= 1 + (rnd(10+i)-.5)*.09;
-    prof[i] = r;
-  }
-  const pts = [];
-  for (let i=0;i<8;i++){
-    const a = i*45*Math.PI/180;
-    pts.push([cx + Math.cos(a)*base*prof[i]*1.05, cy + Math.sin(a)*base*prof[i]]);
-  }
-
-  let g = "";
-
-  // neck + strings, drawn behind the body
-  if (tr.string > .22){
-    const len = 30 + 16*tr.string, nw = 7 + 2*tr.string;
-    g += '<g transform="rotate(-38 '+cx+' '+cy+')">'
-       + '<rect x="'+(cx-nw/2)+'" y="'+(cy-base-len)+'" width="'+nw+'" height="'+(len+base*.6)+'" rx="3" fill="'+dark+'" stroke="'+ink+'" stroke-width="3"/>'
-       + '<rect x="'+(cx-nw/2-3)+'" y="'+(cy-base-len-11)+'" width="'+(nw+6)+'" height="13" rx="3.5" fill="'+light+'" stroke="'+ink+'" stroke-width="3"/>'
-       + '</g>';
-  }
-
-  // body
-  g += '<path d="'+smoothPath(pts)+'" fill="'+body+'" stroke="'+ink+'" stroke-width="3.4" stroke-linejoin="round"/>';
-
-  // drumhead
-  if (tr.perc > .28){
-    const rr = base*(.62 + .12*tr.perc);
-    g += '<ellipse cx="'+cx+'" cy="'+(cy-base*.16)+'" rx="'+rr+'" ry="'+(rr*.72)+'" fill="'+light+'" stroke="'+ink+'" stroke-width="3"/>';
-    for (let i=0;i<3;i++){
-      const a = (-150 + i*60) * Math.PI/180;
-      g += '<circle cx="'+(cx+Math.cos(a)*rr*1.16).toFixed(1)+'" cy="'+(cy-base*.16+Math.sin(a)*rr*.95).toFixed(1)+'" r="2.6" fill="'+ink+'"/>';
-    }
-  }
-
-  // metal rings
-  if (tr.metal > .3){
-    g += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(base*.52)+'" fill="none" stroke="'+ink+'" stroke-width="2.4" opacity=".55"/>';
-    g += '<circle cx="'+cx+'" cy="'+cy+'" r="'+(base*.26)+'" fill="'+light+'" stroke="'+ink+'" stroke-width="2.4"/>';
-  }
-
-  // keys / bars along the bottom
-  if (tr.key > .24){
-    const n = 5, w = (base*1.5)/n, x0 = cx - base*.75, y0 = cy + base*.36;
-    for (let i=0;i<n;i++){
-      const hgt = 13 + 5*tr.key - (i%2)*3;
-      g += '<rect x="'+(x0+i*w+1).toFixed(1)+'" y="'+y0.toFixed(1)+'" width="'+(w-2).toFixed(1)+'" height="'+hgt.toFixed(1)+'" rx="2" fill="'+(i%2?dark:light)+'" stroke="'+ink+'" stroke-width="2.4"/>';
-    }
-  }
-
-  // finger holes
-  if (tr.wind > .26){
-    const n = 3;
-    for (let i=0;i<n;i++){
-      g += '<circle cx="'+cx+'" cy="'+(cy-base*.45+i*(base*.5)).toFixed(1)+'" r="3.1" fill="'+ink+'"/>';
-    }
-  }
-
-  // brass bell
-  if (tr.brass > .2){
-    const bl = 16 + 18*tr.brass, bw = 9 + 15*tr.brass;
-    const x = cx + base*.78, y = cy - base*.12;
-    g += '<path d="M'+x+','+(y-4)+' L'+(x+bl)+','+(y-bw)+' Q'+(x+bl+7)+','+y+' '+(x+bl)+','+(y+bw)+' L'+x+','+(y+4)+' Z" fill="'+light+'" stroke="'+ink+'" stroke-width="3.2" stroke-linejoin="round"/>';
-  }
-
-  // strings across the neck
-  if (tr.string > .22){
-    const len = 30 + 16*tr.string;
-    g += '<g transform="rotate(-38 '+cx+' '+cy+')" stroke="'+ink+'" stroke-width="1.5" opacity=".8">';
-    for (let i=-1;i<=1;i++){
-      g += '<line x1="'+(cx+i*2.4)+'" y1="'+(cy-base-len-4)+'" x2="'+(cx+i*3.4)+'" y2="'+(cy+base*.3)+'"/>';
-    }
-    g += '</g>';
-  }
-
-  // highlight
-  g += '<circle cx="'+(cx-base*.42).toFixed(1)+'" cy="'+(cy-base*.5).toFixed(1)+'" r="'+(base*.16).toFixed(1)+'" fill="#fff" opacity=".45"/>';
-
-  return '<svg viewBox="0 0 120 124" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">'
-       + '<g transform="rotate('+tilt.toFixed(1)+' 60 62)">'+g+'</g></svg>';
+function iconHybrid(A, B){
+  const ha = ART[A.id], fb = ART[B.id];
+  const ca = pal(A.color), cb = pal(B.color);
+  return svgWrap(place(fb.feat(cb), ha.anchor, 1.15) + ha.body(ca));
 }
 
 /* ============================================================
@@ -673,7 +845,7 @@ function buildGrid(){
   groupsEl.innerHTML = GROUPS.map(function(g){
     const tiles = INST.filter(function(i){ return i.grp === g.id; }).map(function(i){
       return '<button class="pick" type="button" data-id="'+i.id+'" aria-pressed="false">'
-           + '<span class="chip" style="background:'+i.color+'">'+drawInstrument(i.tr, i.color, i.s.f, i.id)+'</span>'
+           + '<span class="chip" style="background:'+wash(i.color)+'">'+iconSolo(i)+'</span>'
            + '<span class="nm">'+i.name+'</span></button>';
     }).join("");
     return '<div><div class="grp-label">'+g.label+'</div><div class="grid">'+tiles+'</div></div>';
@@ -697,7 +869,6 @@ function makeMix(aId, bId){
     a:A, b:B, key:seed, seed:seed,
     name:mashName(A,B),
     sound:mixSound(A,B),
-    traits:mixTraits(A,B),
     color:mixColor(A.color, B.color, .55)
   };
 }
@@ -752,11 +923,9 @@ function slot(inst, big){
 function renderBench(){
   if (current){
     const A = current.a, B = current.b;
-    const a = {color:A.color, svg:drawInstrument(A.tr, A.color, A.s.f, A.id), label:A.name};
-    const b = {color:B.color, svg:drawInstrument(B.tr, B.color, B.s.f, B.id), label:B.name};
-    const m = {color:current.color,
-               svg:drawInstrument(current.traits, current.color, current.sound.f, current.seed),
-               label:"brand new"};
+    const a = {color:wash(A.color), svg:iconSolo(A), label:A.name};
+    const b = {color:wash(B.color), svg:iconSolo(B), label:B.name};
+    const m = {color:wash(current.color), svg:iconHybrid(A, B), label:"brand new"};
     benchEl.innerHTML =
         '<div class="eyebrow">'+(isExample ? "For example" : "You invented")+'</div>'
       + '<h2 class="newname">'+current.name+'</h2>'
@@ -774,7 +943,7 @@ function renderBench(){
   }
 
   const one = picks.length === 1 ? BY_ID[picks[0]] : null;
-  const a = one ? {color:one.color, svg:drawInstrument(one.tr,one.color,one.s.f,one.id), label:one.name} : null;
+  const a = one ? {color:wash(one.color), svg:iconSolo(one), label:one.name} : null;
   benchEl.innerHTML =
       '<div class="eyebrow">Mixing bench</div>'
     + '<div class="eq">'+slot(a)+'<span class="op">+</span>'+slot(null)+'<span class="op">=</span>'+slot(null,true)+'</div>'
@@ -832,11 +1001,10 @@ function openingState(){
 }
 
 document.getElementById("mark").innerHTML =
-  '<span style="display:block;width:52px;height:52px;border:3px solid var(--ink);border-radius:15px;'
+  '<span style="display:block;width:54px;height:54px;border:3px solid var(--ink);border-radius:15px;'
 + 'box-shadow:4px 4px 0 var(--shadow);overflow:hidden;background:'
-+ mixColor(BY_ID.trumpet.color, BY_ID.bongo.color, .55) + '">'
-+ drawInstrument(mixTraits(BY_ID.trumpet, BY_ID.bongo), mixColor(BY_ID.trumpet.color, BY_ID.bongo.color,.55),
-                 mixSound(BY_ID.trumpet, BY_ID.bongo).f, "mark") + '</span>';
++ wash(mixColor(BY_ID.trumpet.color, BY_ID.bongo.color, .55)) + '">'
++ iconHybrid(BY_ID.trumpet, BY_ID.bongo) + '</span>';
 
 buildGrid();
 openingState();
