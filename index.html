@@ -110,6 +110,20 @@ button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
   .stage{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(340px,.85fr);gap:26px;align-items:start}
   .bench-col{position:sticky;top:var(--sp)}
 }
+/* Single column (iPad portrait, phones): the bench moves above the grid and
+   sticks, so the invented instrument is on screen the moment she taps the
+   second one. Below the fold, she would never see it appear. */
+@media (max-width:879px){
+  .bench-col{
+    order:-1;position:sticky;top:0;z-index:5;
+    background:var(--paper);padding:6px 0 10px;
+  }
+  .bench{min-height:0;gap:12px;padding:15px}
+  .herobox{width:clamp(108px,23vw,152px);border-radius:22px}
+  .playbadge{width:42px;height:42px}
+  .playbadge svg{width:21px;height:21px}
+  .newname{font-size:clamp(27px,7vw,42px)}
+}
 
 /* ---------- instrument groups ---------- */
 .groups{display:flex;flex-direction:column;gap:18px}
