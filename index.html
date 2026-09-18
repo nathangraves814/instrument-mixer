@@ -1,4 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Instrument Mixer</title>
+<meta name="description" content="Tap two instruments and hear the one they make together.">
+
+<meta name="theme-color" content="#FFF6E8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#241B33" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Instrument Mixer">
+
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="favicon.png" sizes="32x32">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="manifest" href="manifest.webmanifest">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@400;500;600;700&display=swap">
@@ -55,11 +76,16 @@ body{
   -webkit-tap-highlight-color:transparent;
   -webkit-text-size-adjust:100%;
   overscroll-behavior-y:contain;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  user-select:none;
 }
 button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer;touch-action:manipulation}
 button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 
-.wrap{max-width:1180px;margin:0 auto;padding:var(--sp) var(--sp) 48px;display:flex;flex-direction:column;gap:var(--sp)}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:var(--sp);
+  padding:calc(var(--sp) + env(safe-area-inset-top)) calc(var(--sp) + env(safe-area-inset-right))
+          calc(44px + env(safe-area-inset-bottom)) calc(var(--sp) + env(safe-area-inset-left));}
 
 /* ---------- header ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -92,6 +118,7 @@ button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
   font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
 }
 .grp-label::after{content:"";flex:1;height:2px;background:var(--rule);border-radius:2px}
+.grp-mark{width:21px;height:21px;flex:none;color:var(--ink-soft)}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 @media (max-width:620px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
@@ -128,14 +155,33 @@ button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
   width:clamp(56px,11vw,76px);aspect-ratio:1/1;border-radius:15px;
   border:3px solid var(--ink);box-shadow:3px 3px 0 var(--shadow);display:grid;place-items:center;overflow:hidden;
 }
-.slot.big .box{width:clamp(86px,17vw,122px);border-radius:20px;box-shadow:5px 5px 0 var(--shadow)}
 .slot .cap{font-size:12px;color:var(--ink-soft);max-width:11ch;text-align:center;line-height:1.2}
 .op{font-family:"Bungee",sans-serif;font-size:clamp(17px,3vw,24px);color:var(--ink-soft);padding-bottom:18px}
 .empty{border-style:dashed!important;box-shadow:none!important;background:var(--surface-2);color:var(--ink-soft);font-size:22px}
 .hint{color:var(--ink-soft);font-size:15px;text-align:center;max-width:30ch;line-height:1.45}
-.playing .slot.big .box{animation:wob .55s ease-in-out 2}
+
+/* the invented instrument: the biggest thing on the bench, and tappable,
+   because the picture and the sound are what a pre-reader is here for */
+.hero{position:relative;display:block;line-height:0}
+.herobox{
+  display:grid;place-items:center;overflow:hidden;
+  width:clamp(132px,27vw,190px);aspect-ratio:1/1;border-radius:26px;
+  border:3px solid var(--ink);box-shadow:6px 6px 0 var(--shadow);
+  transition:transform .1s ease,box-shadow .1s ease;
+}
+.herobox svg{width:94%;height:94%;display:block}
+.herobox.empty{font-family:"Bungee","Fredoka",sans-serif;font-size:42px;line-height:1;place-items:center;display:grid}
+.hero:active .herobox{transform:translate(6px,6px);box-shadow:0 0 0 var(--shadow)}
+.playbadge{
+  position:absolute;right:-9px;bottom:-9px;width:48px;height:48px;border-radius:50%;
+  background:var(--accent);color:var(--accent-ink);
+  border:3px solid var(--ink);box-shadow:3px 3px 0 var(--shadow);
+  display:grid;place-items:center;
+}
+.playbadge svg{width:25px;height:25px;display:block}
+.playing .herobox{animation:wob .55s ease-in-out 2}
 @keyframes wob{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-4deg) scale(1.06)}75%{transform:rotate(4deg) scale(1.06)}}
-@media (prefers-reduced-motion:reduce){.playing .slot.big .box{animation:none}}
+@media (prefers-reduced-motion:reduce){.playing .herobox{animation:none}}
 
 .acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .btn{
@@ -154,20 +200,26 @@ button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
 .album h2{font-family:"Bungee",sans-serif;font-weight:400;font-size:clamp(17px,2.6vw,22px);margin:0}
 .album-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .album-head .count{font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-.found{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
-.card{
-  display:flex;align-items:center;gap:10px;text-align:left;width:100%;
-  border:2.5px solid var(--ink);border-radius:14px;background:var(--surface-2);padding:8px 11px;
+/* the album is browsed by picture, not by name */
+.found{display:grid;grid-template-columns:repeat(auto-fill,minmax(134px,1fr));gap:11px}
+.find{
+  display:flex;flex-direction:column;align-items:center;gap:7px;width:100%;min-width:0;
+  border:2.5px solid var(--ink);border-radius:16px;background:var(--surface-2);padding:10px 8px 12px;
   box-shadow:3px 3px 0 var(--shadow);transition:transform .1s ease,box-shadow .1s ease;
 }
-.card:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--shadow)}
-.dot{width:17px;height:17px;border-radius:50%;border:2.5px solid var(--ink);flex:none}
-.card .txt{min-width:0}
-.card .t{font-weight:600;font-size:14.5px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card .s{font-size:11.5px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.find:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--shadow)}
+.fbox{width:100%;aspect-ratio:1/1;border-radius:12px;border:2.5px solid var(--ink);
+  display:grid;place-items:center;overflow:hidden}
+.fbox svg{width:94%;height:94%;display:block}
+.fname{font-weight:600;font-size:15px;line-height:1.15;text-align:center;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsub{font-size:11px;color:var(--ink-soft);line-height:1.2;text-align:center;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .blank{color:var(--ink-soft);font-size:15px;line-height:1.5;margin:0}
 .foot{color:var(--ink-soft);font-size:13px;text-align:center;line-height:1.6;margin:4px 0 0}
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="top">
@@ -836,10 +888,20 @@ const tallyEl  = document.getElementById("tallyNum");
 const foundNEl = document.getElementById("foundN");
 
 const GROUPS = [
-  {id:"blow",    label:"Blow into it"},
-  {id:"strings", label:"Pluck &amp; press"},
-  {id:"hit",     label:"Hit it"}
+  {id:"blow",    label:"Blow into it",   mark:
+    '<circle cx="5" cy="12" r="3.2" fill="currentColor"/>'
+  + '<path d="M10,8 q5,4 0,8 M15,6 q7,6 0,12" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>'},
+  {id:"strings", label:"Pluck &amp; press", mark:
+    '<path d="M7,3 L7,21 M13,3 L13,21" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>'
+  + '<path d="M16,8 L22,11 L16,16 Z" fill="currentColor"/>'},
+  {id:"hit",     label:"Hit it",         mark:
+    '<path d="M4,20 L15,9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>'
+  + '<circle cx="18" cy="6" r="4" fill="currentColor"/>'
+  + '<path d="M3,10 L6,12 M8,4 L9,7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}
 ];
+function grpMark(g){
+  return '<svg class="grp-mark" viewBox="0 0 24 24" aria-hidden="true">'+g.mark+'</svg>';
+}
 
 function buildGrid(){
   groupsEl.innerHTML = GROUPS.map(function(g){
@@ -848,7 +910,8 @@ function buildGrid(){
            + '<span class="chip" style="background:'+wash(i.color)+'">'+iconSolo(i)+'</span>'
            + '<span class="nm">'+i.name+'</span></button>';
     }).join("");
-    return '<div><div class="grp-label">'+g.label+'</div><div class="grid">'+tiles+'</div></div>';
+    return '<div><div class="grp-label">'+grpMark(g)+'<span>'+g.label+'</span></div>'
+         + '<div class="grid">'+tiles+'</div></div>';
   }).join("");
 
   groupsEl.querySelectorAll(".pick").forEach(function(btn){
@@ -911,29 +974,30 @@ function playCurrent(){
   wobbleTimer = setTimeout(function(){ benchEl.classList.remove("playing"); }, Math.min(ms, 1400));
 }
 
-function slot(inst, big){
-  if (!inst) {
-    return '<div class="slot'+(big?" big":"")+'"><span class="box empty">?</span><span class="cap">&nbsp;</span></div>';
-  }
-  return '<div class="slot'+(big?" big":"")+'">'
-       + '<span class="box" style="background:'+inst.color+'">'+inst.svg+'</span>'
-       + '<span class="cap">'+inst.label+'</span></div>';
+function miniSlot(inst){
+  if (!inst) return '<div class="slot"><span class="box empty">?</span><span class="cap">&nbsp;</span></div>';
+  return '<div class="slot"><span class="box" style="background:'+wash(inst.color)+'">'+iconSolo(inst)+'</span>'
+       + '<span class="cap">'+inst.name+'</span></div>';
 }
 
 function renderBench(){
   if (current){
     const A = current.a, B = current.b;
-    const a = {color:wash(A.color), svg:iconSolo(A), label:A.name};
-    const b = {color:wash(B.color), svg:iconSolo(B), label:B.name};
-    const m = {color:wash(current.color), svg:iconHybrid(A, B), label:"brand new"};
     benchEl.innerHTML =
         '<div class="eyebrow">'+(isExample ? "For example" : "You invented")+'</div>'
+      + '<button class="hero" type="button" id="hero" aria-label="Play '+current.name+' again">'
+      +   '<span class="herobox" style="background:'+wash(current.color)+'">'+iconHybrid(A,B)+'</span>'
+      +   '<span class="playbadge" aria-hidden="true">'
+      +     '<svg viewBox="0 0 24 24"><path d="M9,6 L19,12 L9,18 Z" fill="currentColor"/></svg>'
+      +   '</span>'
+      + '</button>'
       + '<h2 class="newname">'+current.name+'</h2>'
-      + '<div class="eq">'+slot(a)+'<span class="op">+</span>'+slot(b)+'<span class="op">=</span>'+slot(m,true)+'</div>'
+      + '<div class="eq">'+miniSlot(A)+'<span class="op">+</span>'+miniSlot(B)+'</div>'
       + '<div class="acts">'
       + '<button class="btn primary" type="button" id="again">Play it again</button>'
       + '<button class="btn" type="button" id="clear">Mix another</button>'
       + '</div>';
+    document.getElementById("hero").addEventListener("click", playCurrent);
     document.getElementById("again").addEventListener("click", playCurrent);
     document.getElementById("clear").addEventListener("click", function(){
       picks = []; current = null; isExample = false;
@@ -943,11 +1007,11 @@ function renderBench(){
   }
 
   const one = picks.length === 1 ? BY_ID[picks[0]] : null;
-  const a = one ? {color:wash(one.color), svg:iconSolo(one), label:one.name} : null;
   benchEl.innerHTML =
       '<div class="eyebrow">Mixing bench</div>'
-    + '<div class="eq">'+slot(a)+'<span class="op">+</span>'+slot(null)+'<span class="op">=</span>'+slot(null,true)+'</div>'
-    + '<p class="hint">'+(one ? "Now pick one more and hear what happens." : "Pick any two instruments above.")+'</p>';
+    + '<span class="herobox empty">?</span>'
+    + '<div class="eq">'+miniSlot(one)+'<span class="op">+</span>'+miniSlot(null)+'</div>'
+    + '<p class="hint">'+(one ? "Now pick one more and hear what happens." : "Pick any two instruments.")+'</p>';
 }
 
 function renderAlbum(){
@@ -960,18 +1024,18 @@ function renderAlbum(){
     return;
   }
   keys.sort(function(x,y){ return found[y].at - found[x].at; });
-  const shown = keys.slice(0, 60);
+  const shown = keys.slice(0, 48);
   albumEl.innerHTML = '<div class="found">' + shown.map(function(k){
     const f = found[k], A = BY_ID[f.a], B = BY_ID[f.b];
     if (!A || !B) return "";
-    return '<button class="card" type="button" data-a="'+f.a+'" data-b="'+f.b+'">'
-         + '<span class="dot" style="background:'+mixColor(A.color,B.color,.55)+'"></span>'
-         + '<span class="txt"><span class="t">'+f.n+'</span>'
-         + '<span class="s">'+A.name+' + '+B.name+'</span></span></button>';
+    return '<button class="find" type="button" data-a="'+f.a+'" data-b="'+f.b+'" aria-label="Play '+f.n+'">'
+         + '<span class="fbox" style="background:'+wash(mixColor(A.color,B.color,.55))+'">'+iconHybrid(A,B)+'</span>'
+         + '<span class="fname">'+f.n+'</span>'
+         + '<span class="fsub">'+A.name+' + '+B.name+'</span></button>';
   }).join("") + '</div>'
-  + (keys.length > 60 ? '<p class="foot">and '+(keys.length-60)+' more</p>' : "");
+  + (keys.length > 48 ? '<p class="foot">and '+(keys.length-48)+' more</p>' : "");
 
-  albumEl.querySelectorAll(".card").forEach(function(btn){
+  albumEl.querySelectorAll(".find").forEach(function(btn){
     btn.addEventListener("click", function(){
       picks = [btn.dataset.a, btn.dataset.b];
       current = makeMix(picks[0], picks[1]);
@@ -982,7 +1046,6 @@ function renderAlbum(){
   });
 }
 
-/* ---- opening state: a real mix already on the bench ---- */
 function openingState(){
   const keys = Object.keys(found);
   if (keys.length){
@@ -1011,6 +1074,15 @@ openingState();
 renderBench();
 renderAlbum();
 
+if ("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+
 window.addEventListener("touchstart", unlock, {once:true, passive:true});
 window.addEventListener("pointerdown", unlock, {once:true});
 </script>
+
+</body>
+</html>
